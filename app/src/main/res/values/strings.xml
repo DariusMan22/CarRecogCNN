@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">CarRecogCNN</string>
+    <string name="button_Gallery">Galerie</string>
+    <string name="button_Camera">Camera</string>
+
+
+</resources>

@@ -35,11 +35,11 @@ public class CropperActivity extends AppCompatActivity {
 
 
         UCrop.of(fileUri, Uri.fromFile(new File(getCacheDir(), dest_uri)))
-            .withOptions(options)
-            .withAspectRatio(0,0)
-            .useSourceImageAspectRatio()
-            .withMaxResultSize(2000,2000)
-            .start(CropperActivity.this);
+                .withOptions(options)
+                .withAspectRatio(0,0)
+                .useSourceImageAspectRatio()
+                .withMaxResultSize(2000,2000)
+                .start(CropperActivity.this);
     }
 
     private void readIntent(){

@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                        && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                     mGetContent.launch("image/*");
                 }else {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
@@ -270,8 +270,8 @@ public class MainActivity extends AppCompatActivity {
                     // functionality that depends on this permission.
                     //requestPermissions(new String[]{Manifest.permission.CAMERA}, 2);
                 }
-            // other 'case' lines to check for other
-            // permissions this app might request.
+                // other 'case' lines to check for other
+                // permissions this app might request.
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + requestCode);

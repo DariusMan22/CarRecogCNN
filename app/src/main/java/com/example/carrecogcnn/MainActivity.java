@@ -19,10 +19,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.carrecogcnn.ml.NlCnnCompcars63LabelsV0;
 import com.example.carrecogcnn.ml.XceptionCompcars63LabelsV0;
 
 import org.tensorflow.lite.DataType;
@@ -48,6 +53,11 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<String> mGetContent;
     ActivityResultLauncher<Intent> activityResultLauncher;
 
+    String model_selection = null;
+    String[] items = {"Xception","NL-CNN"};
+    AutoCompleteTextView autoCompleteTxt;
+    ArrayAdapter<String> adapterItems;
+    String item = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +66,20 @@ public class MainActivity extends AppCompatActivity {
         tvResult = findViewById(R.id.tv_result);
         ivAddImage = findViewById(R.id.iv_add_image);
         ivLogo = findViewById(R.id.iv_logo);
+
+        autoCompleteTxt = findViewById(R.id.auto_complete_txt);
+        adapterItems = new ArrayAdapter<String>(this, R.layout.list_item,items);
+
+        autoCompleteTxt.setAdapter(adapterItems);
+
+        autoCompleteTxt.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                item = parent.getItemAtPosition(position).toString();
+                Toast.makeText(getApplicationContext(), "Model: "+item, Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
         //for getting the image from files
         bSelectImage = findViewById(R.id.b_select_image);
@@ -162,10 +186,120 @@ public class MainActivity extends AppCompatActivity {
         return MediaStore.Images.Media.getBitmap(this.getContentResolver(), result);
     }
 
-    private void changeLogo(int logoIndex){
+    private void changeLogo(TensorBuffer outputFeature0){
+        float[] confidences = outputFeature0.getFloatArray();
+        // find the index of the class with the biggest confidence.
+        int maxPos = 0;
+        float maxConfidence = 0;
+        for (int i = 0; i < confidences.length; i++) {
+            if (confidences[i] > maxConfidence) {
+                maxConfidence = confidences[i];
+                maxPos = i;
+            }
+        }
+        String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart",
+                "Mitsubishi", "Toyota", "Isuzu", "Iveco", "Porsche", "Chrysler", "Lamborghini",
+                "Cadillac", "Lorinser", "Rolls-Royce", "Carlsson", "Volkswagen", "Benz",
+                "Audi", "Wisemann", "BMW", "Bentley", "Bugatti", "Pagani", "Jaguar", "Morgan",
+                "Subaru", "Skoda", "Nissan", "Honda", "Lincoln", "Peugeot", "Opel", "Vauxhall",
+                "Volvo", "Ferrari", "Maserati", "Hyundai ", "Ford", "Koenigsegg", "Infiniti",
+                "FIAT", "Lancia", "Seat", "Acura", "KIA", "LAND-ROVER", "McLaren", "Maybach",
+                "Dodge", "Mustang", "Suzuki", "Alfa Romeo", "Aston Martin", "Chevy", "Citroen",
+                "Lexus", "Renault", "MAZDA"};
+
         int []logoArray={R.drawable.ds_logo,R.drawable.dacia_logo,R.drawable.gmc_logo,
                 R.drawable.jeep_logo, R.drawable.mg_logo};
-        ivLogo.setImageResource(logoArray[logoIndex]);
+
+
+        tvResult.setText(classes[maxPos]);
+        ivLogo.setImageResource(logoArray[maxPos]);
+    }
+
+    private TensorBuffer generateTensorBuffer(Bitmap imageBitmap){
+        TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 128, 128, 3}, DataType.FLOAT32);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4*128*128*3);
+        byteBuffer.order(ByteOrder.nativeOrder());
+
+        int[] intValues = new int[128*128];
+        imageBitmap.getPixels(intValues,0,imageBitmap.getWidth(),0,0,imageBitmap.getWidth(), imageBitmap.getHeight());
+        int pixel = 0;
+
+        for(int i = 0; i < 128; i ++){
+            for(int j = 0; j < 128; j++){
+                int val = intValues[pixel++]; // RGB
+                byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 255));
+                byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 255));
+                byteBuffer.putFloat((val & 0xFF) * (1.f / 255));
+            }
+        }
+        inputFeature0.loadBuffer(byteBuffer);
+        return inputFeature0;
+    }
+
+
+    private void runModel(String selected_model, Bitmap imageBitmap){
+        if(selected_model.equals("Xception")){
+            try {
+                XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+
+                // Runs model inference and gets result.
+                XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+
+
+                // Releases model resources if no longer used.
+                model.close();
+                changeLogo(outputFeature0);
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+        else if(selected_model.equals("NL-CNN")){
+            try {
+                NlCnnCompcars63LabelsV0 model = NlCnnCompcars63LabelsV0.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+
+
+                // Runs model inference and gets result.
+                NlCnnCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+
+
+                // Releases model resources if no longer used.
+                model.close();
+                changeLogo(outputFeature0);
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+        else{
+            try {
+                XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+
+                // Runs model inference and gets result.
+                XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+
+
+                // Releases model resources if no longer used.
+                model.close();
+                changeLogo(outputFeature0);
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+
     }
 
     private void outputGenerator(Uri image){
@@ -179,63 +313,7 @@ public class MainActivity extends AppCompatActivity {
 
         imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 128, 128, false);
         ivAddImage.setImageBitmap(imageBitmap);
-
-        try {
-            XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
-
-            // Creates inputs for reference.
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 128, 128, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4*128*128*3);
-            byteBuffer.order(ByteOrder.nativeOrder());
-
-            int[] intValues = new int[128*128];
-            imageBitmap.getPixels(intValues,0,imageBitmap.getWidth(),0,0,imageBitmap.getWidth(), imageBitmap.getHeight());
-            int pixel = 0;
-
-            for(int i = 0; i < 128; i ++){
-                for(int j = 0; j < 128; j++){
-                    int val = intValues[pixel++]; // RGB
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 255));
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 255));
-                    byteBuffer.putFloat((val & 0xFF) * (1.f / 255));
-                }
-            }
-            inputFeature0.loadBuffer(byteBuffer);
-
-            // Runs model inference and gets result.
-            XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-
-
-            // Releases model resources if no longer used.
-            model.close();
-            float[] confidences = outputFeature0.getFloatArray();
-            // find the index of the class with the biggest confidence.
-            int maxPos = 0;
-            float maxConfidence = 0;
-            for (int i = 0; i < confidences.length; i++) {
-                if (confidences[i] > maxConfidence) {
-                    maxConfidence = confidences[i];
-                    maxPos = i;
-                }
-            }
-            String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart",
-                    "Mitsubishi", "Toyota", "Isuzu", "Iveco", "Porsche", "Chrysler", "Lamborghini",
-                    "Cadillac", "Lorinser", "Rolls-Royce", "Carlsson", "Volkswagen", "Benz",
-                    "Audi", "Wisemann", "BMW", "Bentley", "Bugatti", "Pagani", "Jaguar", "Morgan",
-                    "Subaru", "Skoda", "Nissan", "Honda", "Lincoln", "Peugeot", "Opel", "Vauxhall",
-                    "Volvo", "Ferrari", "Maserati", "Hyundai ", "Ford", "Koenigsegg", "Infiniti",
-                    "FIAT", "Lancia", "Seat", "Acura", "KIA", "LAND-ROVER", "McLaren", "Maybach",
-                    "Dodge", "Mustang", "Suzuki", "Alfa Romeo", "Aston Martin", "Chevy", "Citroen",
-                    "Lexus", "Renault", "MAZDA"};
-            tvResult.setText(classes[maxPos]);
-            changeLogo(maxPos);
-
-        } catch (IOException e) {
-            // TODO Handle the exception
-        }
-
-
+        runModel(item, imageBitmap);
     }
 
 

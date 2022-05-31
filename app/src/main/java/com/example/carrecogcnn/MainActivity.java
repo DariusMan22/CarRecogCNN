@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     Button bOpenCamera;
     Button bSelectImage;
     TextView tvResult;
+    TextView tvResultProcessTime;
     ImageView ivAddImage;
     ImageView ivLogo;
     ActivityResultLauncher<String> mGetContent;
@@ -57,13 +58,14 @@ public class MainActivity extends AppCompatActivity {
     String[] items = {"Xception","NL-CNN"};
     AutoCompleteTextView autoCompleteTxt;
     ArrayAdapter<String> adapterItems;
-    String item = null;
+    String item = "Xception";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         tvResult = findViewById(R.id.tv_result);
+        tvResultProcessTime = findViewById(R.id.tv_result2);
         ivAddImage = findViewById(R.id.iv_add_image);
         ivLogo = findViewById(R.id.iv_logo);
 
@@ -208,10 +210,11 @@ public class MainActivity extends AppCompatActivity {
                 "Lexus", "Renault", "MAZDA"};
 
         int []logoArray={R.drawable.ds_logo,R.drawable.dacia_logo,R.drawable.gmc_logo,
-                R.drawable.jeep_logo, R.drawable.mg_logo};
+                R.drawable.jeep_logo, R.drawable.mg_logo, R.drawable.mini_logo, R.drawable.pgo_logo,
+                R.drawable.tesla_logo, R.drawable.smart_logo};
 
 
-        tvResult.setText(classes[maxPos]);
+        tvResult.setText(classes[maxPos]+"\n"+"Incredere:"+ String.format("%.2f",maxConfidence * 100 )+"%");
         ivLogo.setImageResource(logoArray[maxPos]);
     }
 
@@ -238,6 +241,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void runModel(String selected_model, Bitmap imageBitmap){
+        TensorBuffer outputFeature = null;
+        long startTime = System.currentTimeMillis();
         if(selected_model.equals("Xception")){
             try {
                 XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
@@ -248,12 +253,10 @@ public class MainActivity extends AppCompatActivity {
                 // Runs model inference and gets result.
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-
+                outputFeature = outputFeature0;
 
                 // Releases model resources if no longer used.
                 model.close();
-                changeLogo(outputFeature0);
-
             } catch (IOException e) {
                 // TODO Handle the exception
             }
@@ -269,11 +272,10 @@ public class MainActivity extends AppCompatActivity {
                 // Runs model inference and gets result.
                 NlCnnCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-
+                outputFeature = outputFeature0;
 
                 // Releases model resources if no longer used.
                 model.close();
-                changeLogo(outputFeature0);
 
             } catch (IOException e) {
                 // TODO Handle the exception
@@ -289,17 +291,18 @@ public class MainActivity extends AppCompatActivity {
                 // Runs model inference and gets result.
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
-
+                outputFeature = outputFeature0;
 
                 // Releases model resources if no longer used.
                 model.close();
-                changeLogo(outputFeature0);
 
             } catch (IOException e) {
                 // TODO Handle the exception
             }
         }
-
+        changeLogo(outputFeature);
+        long difference = System.currentTimeMillis() - startTime;
+        tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
     }
 
     private void outputGenerator(Uri image){

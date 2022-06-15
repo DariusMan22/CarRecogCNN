@@ -27,6 +27,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.carrecogcnn.ml.Efficientnetb0Compcars63LabelsAugV1;
+import com.example.carrecogcnn.ml.Mobilenetv2Compcars63LabelsBetter;
 import com.example.carrecogcnn.ml.NlCnnCompcars63LabelsV0;
 import com.example.carrecogcnn.ml.XceptionCompcars63LabelsV0;
 
@@ -41,6 +43,9 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -49,13 +54,17 @@ public class MainActivity extends AppCompatActivity {
     Button bSelectImage;
     TextView tvResult;
     TextView tvResultProcessTime;
+    TextView tvTrust;
     ImageView ivAddImage;
     ImageView ivLogo;
     ActivityResultLauncher<String> mGetContent;
     ActivityResultLauncher<Intent> activityResultLauncher;
 
-    String model_selection = null;
-    String[] items = {"Xception","NL-CNN"};
+    long difference;
+
+    Bitmap imageBitmapUseOnItemLits = null;
+
+    String[] items = {"Xception","NL-CNN","MobileNetV2","EfficientnetB0"};
     AutoCompleteTextView autoCompleteTxt;
     ArrayAdapter<String> adapterItems;
     String item = "Xception";
@@ -66,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         tvResult = findViewById(R.id.tv_result);
         tvResultProcessTime = findViewById(R.id.tv_result2);
+        tvTrust = findViewById(R.id.tv_trust);
         ivAddImage = findViewById(R.id.iv_add_image);
         ivLogo = findViewById(R.id.iv_logo);
 
@@ -79,6 +89,13 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 item = parent.getItemAtPosition(position).toString();
                 Toast.makeText(getApplicationContext(), "Model: "+item, Toast.LENGTH_SHORT).show();
+                if (imageBitmapUseOnItemLits != null) {
+                    changeLogo(runModel(item, imageBitmapUseOnItemLits));
+                    tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "Fă o poză", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -94,6 +111,38 @@ public class MainActivity extends AppCompatActivity {
                 }else {
                     requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
                 }
+            }
+        });
+
+        Button btn = (Button)findViewById(R.id.b_graph_activity);
+
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (imageBitmapUseOnItemLits != null) {
+                    List<Object> outputFeatureXception = dataFromOutputFeature(runModel(items[0],imageBitmapUseOnItemLits));
+                    List<Object> outputFeatureNlCnn = dataFromOutputFeature(runModel(items[1],imageBitmapUseOnItemLits));
+                    List<Object> outputFeatureMobileNetV2 = dataFromOutputFeature(runModel(items[2],imageBitmapUseOnItemLits));
+                    List<Object> outputFeatureEfficientnetB0 = dataFromOutputFeature(runModel(items[3],imageBitmapUseOnItemLits));
+
+                    Bundle extras = new Bundle();
+                    extras.putString("maxPositionsX", outputFeatureXception.get(0).toString());
+                    extras.putString("confidenceX", outputFeatureXception.get(1).toString());
+                    extras.putString("maxPositionsNl", outputFeatureNlCnn.get(0).toString());
+                    extras.putString("confidenceNl", outputFeatureNlCnn.get(1).toString());
+                    extras.putString("maxPositionsMob", outputFeatureMobileNetV2.get(0).toString());
+                    extras.putString("confidenceMob", outputFeatureMobileNetV2.get(1).toString());
+                    extras.putString("maxPositionsEff", outputFeatureEfficientnetB0.get(0).toString());
+                    extras.putString("confidenceEff", outputFeatureEfficientnetB0.get(1).toString());
+
+                    Intent i1 = new Intent(MainActivity.this, GraphActivity.class);
+                    i1.putExtras(extras);
+                    startActivity(i1);
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "Fară poză", Toast.LENGTH_SHORT).show();
+                }
+
             }
         });
 
@@ -160,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private Uri saveImage(Bitmap image, Context context){
+    private Uri saveImage(@NonNull Bitmap image, @NonNull Context context){
 
 
         File imageFolder = new File(context.getCacheDir(), "images");
@@ -188,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
         return MediaStore.Images.Media.getBitmap(this.getContentResolver(), result);
     }
 
-    private void changeLogo(TensorBuffer outputFeature0){
+    private List<Object> dataFromOutputFeature(@NonNull TensorBuffer outputFeature0){
         float[] confidences = outputFeature0.getFloatArray();
         // find the index of the class with the biggest confidence.
         int maxPos = 0;
@@ -199,6 +248,13 @@ public class MainActivity extends AppCompatActivity {
                 maxPos = i;
             }
         }
+        return Arrays.asList(maxPos, maxConfidence);
+    }
+
+    private void changeLogo(@NonNull TensorBuffer outputFeature0){
+
+        List<Object> data = dataFromOutputFeature(outputFeature0);
+
         String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart",
                 "Mitsubishi", "Toyota", "Isuzu", "Iveco", "Porsche", "Chrysler", "Lamborghini",
                 "Cadillac", "Lorinser", "Rolls-Royce", "Carlsson", "Volkswagen", "Benz",
@@ -214,11 +270,13 @@ public class MainActivity extends AppCompatActivity {
                 R.drawable.tesla_logo, R.drawable.smart_logo};
 
 
-        tvResult.setText(classes[maxPos]+"\n"+"Incredere:"+ String.format("%.2f",maxConfidence * 100 )+"%");
-        ivLogo.setImageResource(logoArray[maxPos]);
+        tvResult.setText(classes[(int)data.get(0)]);
+        tvTrust.setText("Incredere:"+ String.format("%.2f",(float)data.get(1) * 100 )+"%");
+        //ivLogo.setImageResource(logoArray[maxPos]);
     }
 
-    private TensorBuffer generateTensorBuffer(Bitmap imageBitmap){
+    @NonNull
+    private TensorBuffer generateTensorBuffer(@NonNull Bitmap imageBitmap, float divide, float substract){
         TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 128, 128, 3}, DataType.FLOAT32);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4*128*128*3);
         byteBuffer.order(ByteOrder.nativeOrder());
@@ -230,9 +288,9 @@ public class MainActivity extends AppCompatActivity {
         for(int i = 0; i < 128; i ++){
             for(int j = 0; j < 128; j++){
                 int val = intValues[pixel++]; // RGB
-                byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 255));
-                byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 255));
-                byteBuffer.putFloat((val & 0xFF) * (1.f / 255));
+                byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / divide) - substract) ;
+                byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / divide) - substract);
+                byteBuffer.putFloat((val & 0xFF) * (1.f / divide) - substract);
             }
         }
         inputFeature0.loadBuffer(byteBuffer);
@@ -240,15 +298,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void runModel(String selected_model, Bitmap imageBitmap){
-        TensorBuffer outputFeature = null;
+    private void runAllModels(@NonNull String selected_model, Bitmap imageBitmap){
+
+    }
+
+    private TensorBuffer runModel(@NonNull String selected_model, Bitmap imageBitmap){
         long startTime = System.currentTimeMillis();
+        TensorBuffer outputFeature = null;
         if(selected_model.equals("Xception")){
             try {
                 XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
 
                 // Creates inputs for reference.
-                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
                 // Runs model inference and gets result.
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
@@ -266,11 +328,52 @@ public class MainActivity extends AppCompatActivity {
                 NlCnnCompcars63LabelsV0 model = NlCnnCompcars63LabelsV0.newInstance(getApplicationContext());
 
                 // Creates inputs for reference.
-                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
 
                 // Runs model inference and gets result.
                 NlCnnCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+                outputFeature = outputFeature0;
+
+                // Releases model resources if no longer used.
+                model.close();
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+        else if(selected_model.equals("MobileNetV2")){
+            try {
+                Mobilenetv2Compcars63LabelsBetter model = Mobilenetv2Compcars63LabelsBetter.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 124.5f, 1f);
+
+
+                // Runs model inference and gets result.
+                Mobilenetv2Compcars63LabelsBetter.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+                outputFeature = outputFeature0;
+
+                // Releases model resources if no longer used.
+                model.close();
+
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+        else if(selected_model.equals("EfficientnetB0")){
+            try {
+                Efficientnetb0Compcars63LabelsAugV1 model = Efficientnetb0Compcars63LabelsAugV1.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 1.0f, 0.0f);
+
+
+                // Runs model inference and gets result.
+                Efficientnetb0Compcars63LabelsAugV1.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
 
@@ -286,7 +389,7 @@ public class MainActivity extends AppCompatActivity {
                 XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());
 
                 // Creates inputs for reference.
-                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap);
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
                 // Runs model inference and gets result.
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
@@ -300,9 +403,10 @@ public class MainActivity extends AppCompatActivity {
                 // TODO Handle the exception
             }
         }
-        changeLogo(outputFeature);
-        long difference = System.currentTimeMillis() - startTime;
-        tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
+        //changeLogo(outputFeature);
+        difference = System.currentTimeMillis() - startTime;
+        return outputFeature;
+        //tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
     }
 
     private void outputGenerator(Uri image){
@@ -315,8 +419,10 @@ public class MainActivity extends AppCompatActivity {
         //ivAddImage.setImageBitmap(imageBitmap);
 
         imageBitmap = Bitmap.createScaledBitmap(imageBitmap, 128, 128, false);
+        imageBitmapUseOnItemLits = imageBitmap;
         ivAddImage.setImageBitmap(imageBitmap);
-        runModel(item, imageBitmap);
+        changeLogo(runModel(item, imageBitmap));
+        tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
     }
 
 

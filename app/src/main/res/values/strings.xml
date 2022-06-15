@@ -2,6 +2,7 @@
     <string name="app_name">CarRecogCNN</string>
     <string name="button_Gallery">Galerie</string>
     <string name="button_Camera">Camera</string>
+    <string name = "button_graph">Grafic</string>
     <string name="select_model">Selecteaza modelul CNN(Xception default)</string>
     <string name="xception_model">Xception</string>
     <string name="nlcnn_model">NL-CNN</string>

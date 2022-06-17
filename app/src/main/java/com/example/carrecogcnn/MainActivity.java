@@ -30,6 +30,7 @@ import android.widget.Toast;
 import com.example.carrecogcnn.ml.Efficientnetb0Compcars63LabelsAugV1;
 import com.example.carrecogcnn.ml.Mobilenetv2Compcars63LabelsBetter;
 import com.example.carrecogcnn.ml.NlCnnCompcars63LabelsV0;
+import com.example.carrecogcnn.ml.ShuffletnetCompcars63LabelsGroup3Scale2;
 import com.example.carrecogcnn.ml.XceptionCompcars63LabelsV0;
 
 import org.tensorflow.lite.DataType;
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
     Bitmap imageBitmapUseOnItemLits = null;
 
-    String[] items = {"Xception","NL-CNN","MobileNetV2","EfficientnetB0"};
+    String[] items = {"Xception","NL-CNN","MobileNetV2","EfficientnetB0","ShuffleNetx2"};
     AutoCompleteTextView autoCompleteTxt;
     ArrayAdapter<String> adapterItems;
     String item = "Xception";
@@ -124,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
                     List<Object> outputFeatureNlCnn = dataFromOutputFeature(runModel(items[1],imageBitmapUseOnItemLits));
                     List<Object> outputFeatureMobileNetV2 = dataFromOutputFeature(runModel(items[2],imageBitmapUseOnItemLits));
                     List<Object> outputFeatureEfficientnetB0 = dataFromOutputFeature(runModel(items[3],imageBitmapUseOnItemLits));
+                    List<Object> outputFeatureShuffleNetx2 = dataFromOutputFeature(runModel(items[4],imageBitmapUseOnItemLits));
+
 
                     Bundle extras = new Bundle();
                     extras.putString("maxPositionsX", outputFeatureXception.get(0).toString());
@@ -134,6 +137,8 @@ public class MainActivity extends AppCompatActivity {
                     extras.putString("confidenceMob", outputFeatureMobileNetV2.get(1).toString());
                     extras.putString("maxPositionsEff", outputFeatureEfficientnetB0.get(0).toString());
                     extras.putString("confidenceEff", outputFeatureEfficientnetB0.get(1).toString());
+                    extras.putString("maxPositionsShu", outputFeatureShuffleNetx2.get(0).toString());
+                    extras.putString("confidenceShu", outputFeatureShuffleNetx2.get(1).toString());
 
                     Intent i1 = new Intent(MainActivity.this, GraphActivity.class);
                     i1.putExtras(extras);
@@ -267,12 +272,30 @@ public class MainActivity extends AppCompatActivity {
 
         int []logoArray={R.drawable.ds_logo,R.drawable.dacia_logo,R.drawable.gmc_logo,
                 R.drawable.jeep_logo, R.drawable.mg_logo, R.drawable.mini_logo, R.drawable.pgo_logo,
-                R.drawable.tesla_logo, R.drawable.smart_logo};
+                R.drawable.tesla_logo, R.drawable.smart_logo, R.drawable.mitsubishi_logo,
+                R.drawable.toyota_logo,R.drawable.isuzu_logo,R.drawable.iveco_logo,
+                R.drawable.porsche_logo,R.drawable.chrysler_logo,R.drawable.lamborghini_logo,
+                R.drawable.cadilla_logoc,R.drawable.lorinser_logo, R.drawable.rollsroyce_logo,
+                R.drawable.carlsson_logo,R.drawable.volkswagen_logo,R.drawable.mercedes_logo,
+                R.drawable.audi_logo,R.drawable.wisemann_logo, R.drawable.bmw_logo,
+                R.drawable.bentley_logo,R.drawable.bugatti_logo,R.drawable.pagani_logo,
+                R.drawable.jaguar_logo,R.drawable.morgan_logo,R.drawable.subaru_logo,
+                R.drawable.skoda_logo,R.drawable.nissan_logo,R.drawable.honda_logo,
+                R.drawable.lincoln_logo,R.drawable.peugeot_logo,R.drawable.opel_logo,
+                R.drawable.vauxhall_logo,R.drawable.volvo_logo,R.drawable.ferrari_logo,
+                R.drawable.maserati_logo,R.drawable.hyundai_logo,R.drawable.ford_logo,
+                R.drawable.koenigsegg_logo,R.drawable.infiniti_logo,R.drawable.fiat_logo,
+                R.drawable.lancia_logo,R.drawable.seat_logo,R.drawable.acura_logo,
+                R.drawable.kia_logo,R.drawable.landrover_logo,R.drawable.mclaren_logo,
+                R.drawable.maybach_logo,R.drawable.dodge_logo,R.drawable.mustang_logo,
+                R.drawable.suzuki_png,R.drawable.alfaromeo_logo,R.drawable.astonmartin_logo,
+                R.drawable.chevy_logo,R.drawable.citroen_logo,R.drawable.lexus_logo,
+                R.drawable.renault_logo,R.drawable.mazda_logo};
 
 
         tvResult.setText(classes[(int)data.get(0)]);
         tvTrust.setText("Incredere:"+ String.format("%.2f",(float)data.get(1) * 100 )+"%");
-        //ivLogo.setImageResource(logoArray[maxPos]);
+        ivLogo.setImageResource(logoArray[(int)data.get(0)]);
     }
 
     @NonNull
@@ -384,6 +407,28 @@ public class MainActivity extends AppCompatActivity {
                 // TODO Handle the exception
             }
         }
+
+        else if(selected_model.equals("ShuffleNetx2")){
+            try {
+                ShuffletnetCompcars63LabelsGroup3Scale2 model = ShuffletnetCompcars63LabelsGroup3Scale2.newInstance(getApplicationContext());
+
+                // Creates inputs for reference.
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 1.0f, 0.0f);
+
+
+                // Runs model inference and gets result.
+                ShuffletnetCompcars63LabelsGroup3Scale2.Outputs outputs = model.process(inputFeature0);
+                TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+                outputFeature = outputFeature0;
+
+                // Releases model resources if no longer used.
+                model.close();
+
+            } catch (IOException e) {
+                // TODO Handle the exception
+            }
+        }
+
         else{
             try {
                 XceptionCompcars63LabelsV0 model = XceptionCompcars63LabelsV0.newInstance(getApplicationContext());

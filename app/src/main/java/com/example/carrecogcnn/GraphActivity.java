@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.HorizontalBarChart;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.LegendEntry;
 import com.github.mikephil.charting.components.XAxis;
@@ -36,7 +37,7 @@ public class GraphActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         //String Value = extras.getString("maxPositionsX").toString();
 
-        BarChart barChart = findViewById(R.id.barChart);
+        BarChart barChart = (HorizontalBarChart)findViewById(R.id.barChart);
         ArrayList<BarEntry> makerCars = new ArrayList<>();
 
         String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart",
@@ -53,6 +54,8 @@ public class GraphActivity extends AppCompatActivity {
         int maxPosNl = Integer.parseInt(extras.getString("maxPositionsNl"));
         int maxPosMob = Integer.parseInt(extras.getString("maxPositionsMob"));
         int maxPosEff = Integer.parseInt(extras.getString("maxPositionsEff"));
+        int maxPosShu = Integer.parseInt(extras.getString("maxPositionsShu"));
+
 
 
 
@@ -60,6 +63,8 @@ public class GraphActivity extends AppCompatActivity {
         makerCars.add(new BarEntry(1f,Float.parseFloat((extras.getString("confidenceNl")))*100, "NL-CNN"));
         makerCars.add(new BarEntry(2f,Float.parseFloat((extras.getString("confidenceMob")))*100, "MobileNet"));
         makerCars.add(new BarEntry(3f,Float.parseFloat((extras.getString("confidenceEff")))*100, "EffiecientNetB0"));
+        makerCars.add(new BarEntry(4f,Float.parseFloat((extras.getString("confidenceShu")))*100, "ShuffleNetx2"));
+
 
 /*
         makerCars.add(new BarEntry(0f,Float.parseFloat((extras.getString("confidenceX")))*100));
@@ -69,13 +74,10 @@ public class GraphActivity extends AppCompatActivity {
 */
         BarDataSet barDataSet = new BarDataSet(makerCars, "MakerCars");
 
-        barDataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+        barDataSet.setColors(ColorTemplate.COLORFUL_COLORS);
         barDataSet.setValueTextColor(Color.WHITE);
-        barDataSet.setValueTextSize(16f);
+        barDataSet.setValueTextSize(20f);
         barDataSet.setValueFormatter(new PercentFormatter());
-
-
-
 
 
         BarData barData = new BarData(barDataSet);
@@ -86,10 +88,14 @@ public class GraphActivity extends AppCompatActivity {
         xVals.add(classes[maxPosNl]);
         xVals.add(classes[maxPosMob]);
         xVals.add(classes[maxPosEff]);
+        xVals.add(classes[maxPosShu]);
+
 
         XAxis xAxis = barChart.getXAxis();
+        xAxis.setLabelRotationAngle(90);
 
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM_INSIDE);
+
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
 
         ValueFormatter formatter = new ValueFormatter() {
             @Override
@@ -103,11 +109,11 @@ public class GraphActivity extends AppCompatActivity {
 
         xAxis.setGranularity(1f); // minimum axis-step (interval) is 1
         xAxis.setValueFormatter(formatter);
-        barChart.getXAxis().setTextColor(Color.WHITE);
-        barChart.getXAxis().setTextSize(16f);
+        barChart.getXAxis().setTextColor(Color.GRAY);
+        barChart.getXAxis().setTextSize(20f);
         //barChart.setFitBars(true);
         barChart.setData(barData);
-        barChart.animateY(2000);
+        barChart.animateY(800);
         barChart.setDrawValueAboveBar(false);
         barChart.getAxisLeft().setEnabled(false);
         barChart.getAxisRight().setEnabled(false);
@@ -115,26 +121,32 @@ public class GraphActivity extends AppCompatActivity {
         barChart.getLegend().setEnabled(true);
         barChart.getAxisLeft().setAxisMaximum(100);
         barChart.getAxisLeft().setAxisMinimum(0);
+        barChart.getAxisLeft().setDrawGridLines(false);
+        barChart.getXAxis().setDrawGridLines(false);
 
         Legend legend = barChart.getLegend();
         legend.setFormSize(10f);
-        legend.setTextColor(Color.WHITE);
-        legend.setTextSize(10f);
-        legend.setXEntrySpace(10f);
+        legend.setTextColor(Color.GRAY);
+        legend.setTextSize(12f);
+        legend.setXEntrySpace(5f);
         LegendEntry legendEntryA = new LegendEntry();
         LegendEntry legendEntryB = new LegendEntry();
         LegendEntry legendEntryC = new LegendEntry();
         LegendEntry legendEntryD = new LegendEntry();
+        LegendEntry legendEntryE = new LegendEntry();
+
 
         legendEntryA.label = "Xception";
-        legendEntryA.formColor = ColorTemplate.MATERIAL_COLORS[0];
+        legendEntryA.formColor = ColorTemplate.COLORFUL_COLORS[0];
         legendEntryB.label = "NL-CNN";
-        legendEntryB.formColor = ColorTemplate.MATERIAL_COLORS[1];
+        legendEntryB.formColor = ColorTemplate.COLORFUL_COLORS[1];
         legendEntryC.label = "MobileNetV2";
-        legendEntryC.formColor = ColorTemplate.MATERIAL_COLORS[2];
+        legendEntryC.formColor = ColorTemplate.COLORFUL_COLORS[2];
         legendEntryD.label = "EfficientNetB0";
-        legendEntryD.formColor = ColorTemplate.MATERIAL_COLORS[3];
-        legend.setCustom(Arrays.asList(legendEntryA, legendEntryB, legendEntryC, legendEntryD));
+        legendEntryD.formColor = ColorTemplate.COLORFUL_COLORS[3];
+        legendEntryE.label = "ShuffleNetx2";
+        legendEntryE.formColor = ColorTemplate.COLORFUL_COLORS[4];
+        legend.setCustom(Arrays.asList(legendEntryE, legendEntryD, legendEntryC, legendEntryB, legendEntryA));
 
         barChart.invalidate();
 

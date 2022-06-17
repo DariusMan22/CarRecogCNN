@@ -44,14 +44,18 @@
     <ImageView
         android:id="@+id/iv_add_image"
         android:layout_width="300dp"
-        android:layout_height="350dp"
+        android:layout_height="300dp"
         android:layout_centerHorizontal="true"
-        android:cropToPadding="false"
-        android:src="@drawable/ic_baseline_camera_alt_24"
+        android:layout_margin="5dp"
+        android:background="@color/purple_200"
+        android:cropToPadding="true"
+        android:padding="3dp"
+        android:src="@drawable/photo_place_holder"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textInputLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/textInputLayout"
+        tools:ignore="ContentDescription" />
 
     <TextView
         android:id="@+id/tv_result"
@@ -69,7 +73,7 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/iv_add_image"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintVertical_bias="0.868" />
 
     <TextView
         android:id="@+id/tv_trust"
@@ -87,7 +91,7 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/iv_add_image"
-        app:layout_constraintVertical_bias="0.717" />
+        app:layout_constraintVertical_bias="0.679" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/linearLayout2"
@@ -129,21 +133,20 @@
         android:id="@+id/iv_logo"
         android:layout_width="142dp"
         android:layout_height="104dp"
-        android:src="@mipmap/logo_placeholder"
         app:layout_constraintBottom_toTopOf="@+id/tv_result"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/iv_add_image"></ImageView>
 
-    <Button
-        android:id="@+id/b_graph_activity"
-        android:layout_width="150dp"
-        android:layout_height="50dp"
-        android:layout_marginBottom="16dp"
-        android:text="@string/button_graph"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+<Button
+    android:id="@+id/b_graph_activity"
+    android:layout_width="150dp"
+    android:layout_height="50dp"
+    android:layout_marginBottom="16dp"
+    android:text="@string/button_graph"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

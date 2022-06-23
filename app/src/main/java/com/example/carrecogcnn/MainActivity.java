@@ -115,6 +115,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
+            @Override
+            public void onActivityResult(Uri result) {
+                Intent intent = new Intent(MainActivity.this, CropperActivity.class);
+                intent.putExtra("DATA",result.toString());
+                startActivityForResult(intent, 101);
+            }
+        });
+
         Button btn = (Button)findViewById(R.id.b_graph_activity);
 
         btn.setOnClickListener(new View.OnClickListener() {
@@ -148,6 +157,14 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Fară poză", Toast.LENGTH_SHORT).show();
                 }
 
+            }
+        });
+
+        tvResult.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q="+tvResult.getText().toString()));
+                startActivity(intent);
             }
         });
 
@@ -204,14 +221,61 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        tvResult.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q="+tvResult.getText().toString()));
-                startActivity(intent);
-            }
-        });
 
+
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case 1: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    mGetContent.launch("image/*");
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    //requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
+                }
+            }
+            case 2:
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    activityResultLauncher.launch(takePictureIntent);
+
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    //requestPermissions(new String[]{Manifest.permission.CAMERA}, 2);
+                }
+                // other 'case' lines to check for other
+                // permissions this app might request.
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + requestCode);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode == -1 && (requestCode == 101 || requestCode == 102)){
+            String result = data.getStringExtra("RESULT");
+            Uri resultUri = null;
+            if(result!=null){
+                resultUri = Uri.parse(result);
+            }
+            outputGenerator(resultUri);
+        }
     }
 
     private Uri saveImage(@NonNull Bitmap image, @NonNull Context context){
@@ -221,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
         Uri uri = null;
         try{
             imageFolder.mkdir();
-            File file = new File(imageFolder, "captured_image.jpg");
+            File file = new File(imageFolder, "poza.jpg");
             FileOutputStream stream = new FileOutputStream(file);
             image.compress(Bitmap.CompressFormat.JPEG, 100, stream);
             stream.flush();
@@ -260,15 +324,16 @@ public class MainActivity extends AppCompatActivity {
 
         List<Object> data = dataFromOutputFeature(outputFeature0);
 
-        String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart",
-                "Mitsubishi", "Toyota", "Isuzu", "Iveco", "Porsche", "Chrysler", "Lamborghini",
-                "Cadillac", "Lorinser", "Rolls-Royce", "Carlsson", "Volkswagen", "Benz",
-                "Audi", "Wisemann", "BMW", "Bentley", "Bugatti", "Pagani", "Jaguar", "Morgan",
-                "Subaru", "Skoda", "Nissan", "Honda", "Lincoln", "Peugeot", "Opel", "Vauxhall",
-                "Volvo", "Ferrari", "Maserati", "Hyundai ", "Ford", "Koenigsegg", "Infiniti",
-                "FIAT", "Lancia", "Seat", "Acura", "KIA", "LAND-ROVER", "McLaren", "Maybach",
-                "Dodge", "Mustang", "Suzuki", "Alfa Romeo", "Aston Martin", "Chevy", "Citroen",
-                "Lexus", "Renault", "MAZDA"};
+
+        String[] classes = {"DS", "Dacia", "GMC", "Jeep", "MG", "MINI", "PGO", "TESLA", "smart", //9
+                "Mitsubishi", "Toyota", "Isuzu", "Iveco", "Porsche", "Chrysler", "Lamborghini", //7
+                "Cadillac", "Lorinser", "Rolls-Royce", "Carlsson", "Volkswagen", "Benz", //6
+                "Audi", "Wisemann", "BMW", "Bentley", "Bugatti", "Pagani", "Jaguar", "Morgan", //8
+                "Subaru", "Skoda", "Nissan", "Honda", "Lincoln", "Peugeot", "Opel", "Vauxhall", //8
+                "Volvo", "Ferrari", "Maserati", "Hyundai ", "Ford", "Koenigsegg", "Infiniti", //7
+                "FIAT", "Lancia", "Seat", "Acura", "KIA", "LAND-ROVER", "McLaren", "Maybach", //8
+                "Dodge", "Mustang", "Suzuki", "Alfa Romeo", "Aston Martin", "Chevy", "Citroen", //7
+                "Lexus", "Renault", "MAZDA"}; //3
 
         int []logoArray={R.drawable.ds_logo,R.drawable.dacia_logo,R.drawable.gmc_logo,
                 R.drawable.jeep_logo, R.drawable.mg_logo, R.drawable.mini_logo, R.drawable.pgo_logo,
@@ -336,6 +401,7 @@ public class MainActivity extends AppCompatActivity {
                 TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -355,6 +421,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 NlCnnCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -375,6 +442,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 Mobilenetv2Compcars63LabelsBetter.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -396,6 +464,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 Efficientnetb0Compcars63LabelsAugV1.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -413,10 +482,11 @@ public class MainActivity extends AppCompatActivity {
                 ShuffletnetCompcars63LabelsGroup3Scale2 model = ShuffletnetCompcars63LabelsGroup3Scale2.newInstance(getApplicationContext());
 
                 // Creates inputs for reference.
-                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 1.0f, 0.0f);
+                TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 ShuffletnetCompcars63LabelsGroup3Scale2.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -437,6 +507,7 @@ public class MainActivity extends AppCompatActivity {
                 TensorBuffer inputFeature0 = generateTensorBuffer(imageBitmap, 255, 0);
 
                 // Runs model inference and gets result.
+                startTime = System.currentTimeMillis();
                 XceptionCompcars63LabelsV0.Outputs outputs = model.process(inputFeature0);
                 TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
                 outputFeature = outputFeature0;
@@ -468,66 +539,5 @@ public class MainActivity extends AppCompatActivity {
         ivAddImage.setImageBitmap(imageBitmap);
         changeLogo(runModel(item, imageBitmap));
         tvResultProcessTime.setText("Timpul de clasificare este:"+"\n"+String.valueOf(difference)+"ms");
-    }
-
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode) {
-            case 1: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-                    mGetContent.launch("image/*");
-                } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    //requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
-                }
-            }
-            case 2:
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    activityResultLauncher.launch(takePictureIntent);
-
-                } else {
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                    //requestPermissions(new String[]{Manifest.permission.CAMERA}, 2);
-                }
-                // other 'case' lines to check for other
-                // permissions this app might request.
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + requestCode);
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == -1 && requestCode == 101){
-            String result = data.getStringExtra("RESULT");
-            Uri resultUri = null;
-            if(result!=null){
-                resultUri = Uri.parse(result);
-            }
-            outputGenerator(resultUri);
-        }
-        else if(resultCode == -1 && requestCode == 102){
-            String result = data.getStringExtra("RESULT");
-            Uri resultUri = null;
-            if(result!=null){
-                resultUri = Uri.parse(result);
-            }
-            outputGenerator(resultUri);
-        }
     }
 }
